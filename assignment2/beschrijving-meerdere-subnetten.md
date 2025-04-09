@@ -4,6 +4,9 @@ echo "Opruimen..."
 sudo docker rm -f mysql1 mysql2 2>/dev/null
 sudo docker network rm mysql_net1 mysql_net2 2>/dev/null
 
+# Wacht even om er zeker van te zijn dat alles is opgeruimd
+sleep 4
+
 # Maak twee netwerken
 echo "Netwerken aanmaken..."
 sudo docker network create mysql_net1

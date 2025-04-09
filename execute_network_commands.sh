@@ -8,7 +8,7 @@ sudo docker network ls
 
 # Maak een demonstratie netwerk met subnet specificatie
 echo "2. Nieuw netwerk maken met subnet specificatie:"
-sudo docker network create --subnet=172.18.0.0/16 multi-host-network
+sudo docker network create multi-host-network
 
 # Start container voor demonstratie
 echo "3. Start demo container:"
@@ -24,6 +24,12 @@ sudo docker network connect multi-host-network container1
 
 # Verbind container met specifiek IP (moet binnen subnet bereik zijn)
 echo "6. Verbind container met specifiek IP:"
+# First disconnect if already connected
+sudo docker network disconnect multi-host-network container2 2>/dev/null || true
+# Create a new network with proper subnet if needed
+sudo docker network rm multi-host-network 2>/dev/null || true
+sudo docker network create --subnet=172.18.0.0/16 multi-host-network
+# Now connect with specific IP
 sudo docker network connect --ip 172.18.0.10 multi-host-network container2
 
 # Maak netwerk aliassen

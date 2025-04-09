@@ -95,9 +95,7 @@ timeout 3 nc -z -v 127.0.0.1 3307 &>/dev/null && echo "Poort 3307 (MySQL2) is be
 # Als mysql client beschikbaar is, test dan ook de daadwerkelijke MySQL verbinding
 if command -v mysql &> /dev/null; then
   echo "Test MySQL verbinding vanaf VM:"
-  timeout 3 mysql -h127.0.0.1 -P3306 -uroot -ppassword --connect-timeout=3 -e "SELECT 'VM kan MySQL1 bereiken'" &>/dev/null && echo "VM kan MySQL1 bereiken via MySQL client!" || echo "VM kan MySQL1 NIET bereiken via MySQL client."
-  timeout 3 mysql -h127.0.0.1 -P3307 -uroot -ppassword --connect-timeout=3 -e "SELECT 'VM kan MySQL2 bereiken'" &>/dev/null && echo "VM kan MySQL2 bereiken via MySQL client!" || echo "VM kan MySQL2 NIET bereiken via MySQL client."
-else
+  timeout 3 mysql -h127.0.0.1 -P3306 -uroot -ppassword --connect-timeout=3 -e "SELECT 'VM kan MySQL1 bereiken'" &>/dev/null && echo "VM kan MySQL1 bereiken via MySQ>  timeout 3 mysql -h127.0.0.1 -P3307 -uroot -ppassword --connect-timeout=3 -e "SELECT 'VM kan MySQL2 bereiken'" &>/dev/null && echo "VM kan MySQL2 bereiken via MySQ>else
   echo "MySQL client niet gevonden op VM, alleen poorttest uitgevoerd."
 fi
 
@@ -115,7 +113,8 @@ MYSQL2_NET2_IP=$(sudo docker inspect -f '{{index .NetworkSettings.Networks "mysq
 echo "MySQL1 IP in mysql_net2: $MYSQL1_NET2_IP"
 echo "MySQL2 IP in mysql_net2: $MYSQL2_NET2_IP"
 
-# Test 3: Kan MySQL1 nu MySQL2 bereiken via het gedeelde netwerk?
+sleep 6
+
 echo "Test 3: Kan MySQL1 nu MySQL2 bereiken via het gedeelde netwerk?"
 if timeout 3 sudo docker exec mysql1 mysql -h$MYSQL2_NET2_IP -uroot -ppassword --connect-timeout=3 -e "SELECT 1" &>/dev/null; then
   echo "Succes! MySQL1 kan MySQL2 nu bereiken via het gedeelde netwerk!"

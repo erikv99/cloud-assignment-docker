@@ -13,8 +13,9 @@ echo "1. Lijst van alle Docker netwerken:"
 sudo docker network ls
 
 # Maak een demonstratie netwerk met EXPLICIET subnet specificatie
+# Gebruik een ander subnet (172.22.0.0/16) om conflicten te vermijden
 echo "2. Nieuw netwerk maken met subnet specificatie:"
-sudo docker network create --subnet=172.18.0.0/16 multi-host-network
+sudo docker network create --subnet=172.22.0.0/16 multi-host-network
 
 # Start container voor demonstratie
 echo "3. Start demo container:"
@@ -30,7 +31,7 @@ sudo docker network connect multi-host-network container1
 
 # Verbind container met specifiek IP (moet binnen subnet bereik zijn)
 echo "6. Verbind container met specifiek IP:"
-sudo docker network connect --ip 172.18.0.10 multi-host-network container2
+sudo docker network connect --ip 172.22.0.10 multi-host-network container2
 
 # Maak netwerk aliassen
 echo "7. Maak netwerk aliassen voor container:"
@@ -61,8 +62,12 @@ echo "Netwerk ID: $NETWORK_ID"
 
 # Verwijder netwerk met ID - eerst alle containers ontkoppelen
 echo "13. Verwijder netwerk met ID (na ontkoppelen containers):"
-sudo docker network disconnect multi-host-network container2
-sudo docker network rm $NETWORK_ID
+sudo docker network disconnect multi-host-network container2 2>/dev/null || true
+if [ -n "$NETWORK_ID" ]; then
+  sudo docker network rm $NETWORK_ID
+else
+  echo "No network ID found, skipping removal"
+fi
 
 # Verwijder ongebruikte netwerken
 echo "14. Verwijder ongebruikte netwerken:"

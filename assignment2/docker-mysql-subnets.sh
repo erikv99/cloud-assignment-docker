@@ -5,6 +5,8 @@
 sudo docker rm -f mysql1 mysql2 2>/dev/null
 sudo docker network rm subnet1 subnet2 2>/dev/null
 
+sleep 4
+
 # Maak twee aparte subnetten
 sudo docker network create --subnet=172.18.0.0/16 subnet1
 sudo docker network create --subnet=172.19.0.0/16 subnet2

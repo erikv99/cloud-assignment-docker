@@ -1,63 +1,67 @@
 #!/bin/bash
-# Script voor twee MySQL servers in verschillende subnetten
 
-# Verwijder eventuele oude containers
-echo "Oude containers opruimen..."
+# Opruimen
+echo "Opruimen van bestaande containers en netwerken..."
 sudo docker rm -f mysql1 mysql2 2>/dev/null
-
-# Verwijder eventuele oude testnetwerken
-echo "Oude testnetwerken opruimen..."
 sudo docker network rm mysql_net1 mysql_net2 2>/dev/null
 
-# Maak twee nieuwe netwerken met niet-overlappende subnetten
-echo "Nieuwe netwerken aanmaken..."
-sudo docker network create --subnet=10.10.10.0/24 mysql_net1
-sudo docker network create --subnet=10.20.20.0/24 mysql_net2
+# Toon alle netwerken en hun subnetten
+echo "Bestaande Docker netwerken en hun subnetten:"
+for net in $(sudo docker network ls -q); do
+  name=$(sudo docker network inspect $net -f '{{.Name}}')
+  subnet=$(sudo docker network inspect $net -f '{{range .IPAM.Config}}{{.Subnet}}{{end}}')
+  echo "$name: $subnet"
+done
 
-# Start eerste MySQL container in mysql_net1
-echo "MySQL1 starten in mysql_net1..."
+# Maak netwerken zonder subnet specificatie (laat Docker het kiezen)
+echo "Netwerken aanmaken zonder subnet specificatie..."
+sudo docker network create mysql_net1
+sudo docker network create mysql_net2
+
+# Controleer of de netwerken zijn aangemaakt
+echo "Controle van aangemaakte netwerken:"
+sudo docker network ls | grep mysql_net
+
+# Start containers
+echo "Start MySQL containers..."
 sudo docker run -d --name mysql1 --network mysql_net1 \
   -e MYSQL_ROOT_PASSWORD=password \
   -p 3306:3306 \
   mysql:latest
 
-# Start tweede MySQL container in mysql_net2
-echo "MySQL2 starten in mysql_net2..."
 sudo docker run -d --name mysql2 --network mysql_net2 \
   -e MYSQL_ROOT_PASSWORD=password \
   -p 3307:3306 \
   mysql:latest
 
-# Wacht even tot de containers opstarten
-echo "Wachten tot containers zijn opgestart..."
-sleep 10
+# Wacht tot de containers opstarten
+echo "Wachten tot MySQL is opgestart..."
+sleep 15
 
-# Verkrijg IP-adressen
+# Toon IP-adressen
 MYSQL1_IP=$(sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mysql1)
 MYSQL2_IP=$(sudo docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mysql2)
+
+if [ -z "$MYSQL1_IP" ] || [ -z "$MYSQL2_IP" ]; then
+  echo "Kon geen IP-adressen verkrijgen. Containers opstarten mislukt?"
+  echo "Container status:"
+  sudo docker ps -a | grep mysql
+  exit 1
+fi
 
 echo "MySQL1 IP: $MYSQL1_IP (mysql_net1)"
 echo "MySQL2 IP: $MYSQL2_IP (mysql_net2)"
 
-# Test connectiviteit vanaf host naar containers
-echo -e "\nTest connectiviteit vanaf host naar containers:"
-ping -c 1 $MYSQL1_IP && echo "Host kan MySQL1 bereiken" || echo "Host kan MySQL1 NIET bereiken"
-ping -c 1 $MYSQL2_IP && echo "Host kan MySQL2 bereiken" || echo "Host kan MySQL2 NIET bereiken"
-
-# Test of containers elkaar kunnen bereiken (zou moeten falen)
-echo -e "\nTest of containers elkaar kunnen bereiken (zou moeten falen):"
-sudo docker exec mysql1 ping -c 1 $MYSQL2_IP && echo "MySQL1 kan MySQL2 bereiken" || echo "MySQL1 kan MySQL2 NIET bereiken"
+# Test bereikbaarheid
+echo "Test of MySQL1 MySQL2 kan bereiken (zou moeten falen)..."
+sudo docker exec mysql1 ping -c 2 $MYSQL2_IP || echo "MySQL1 kan MySQL2 niet bereiken (verwacht resultaat)"
 
 # Verbind MySQL1 met het tweede netwerk
-echo -e "\nVerbind MySQL1 ook met mysql_net2:"
+echo "Verbind MySQL1 met mysql_net2..."
 sudo docker network connect mysql_net2 mysql1
 
-# Test opnieuw of containers elkaar kunnen bereiken
-echo -e "\nTest opnieuw of containers elkaar kunnen bereiken:"
-sudo docker exec mysql1 ping -c 1 $MYSQL2_IP && echo "MySQL1 kan MySQL2 nu bereiken" || echo "MySQL1 kan MySQL2 nog steeds NIET bereiken"
+# Test opnieuw
+echo "Test opnieuw of MySQL1 MySQL2 kan bereiken (zou moeten slagen)..."
+sudo docker exec mysql1 ping -c 2 $MYSQL2_IP && echo "MySQL1 kan MySQL2 nu bereiken!"
 
-# Controleer of de MySQL services draaien
-echo -e "\nControleer of MySQL services draaien:"
-sudo docker ps | grep mysql
-
-echo -e "\nSetup voltooid!"
+echo "Setup voltooid!"

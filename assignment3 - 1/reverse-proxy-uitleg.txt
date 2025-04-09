@@ -1,0 +1,8 @@
+Staat ook in opdracht Word document.
+
+Een reverse proxy is een server die het verkeer dat naar je daadwerkelijke server(s) gaat opvangt. De reverse proxy is verantwoordelijk voor het doorsturen naar de juiste backend server(s).
+Voordelen zijn onder andere maar niet uitsluitend:
+•	Afscherming, het is niet direct zichtbaar waar het verkeer heen gaat omdat er een reverse proxy tussen zit
+•	Mogelijkheid om hier een load balancer op te zetten
+•	Caching van veel opgevraagde content, waardoor snellere responstijden ontstaan · Centrale plek voor SSL/TLS-certificaten, in plaats van op elke server apart
+In deze opdracht functioneerde Traefik als de reverse proxy en load balancer, het wees automatisch de jusite requests aan de juiste service instance toe. 

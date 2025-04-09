@@ -2,13 +2,19 @@
 # Fixed Docker Networking Commands
 echo "Start Docker Networking Commands"
 
+# Clean up any existing resources first
+echo "Cleaning up existing resources..."
+sudo docker rm -f container1 container2 2>/dev/null || true
+sudo docker network rm multi-host-network 2>/dev/null || true
+sudo docker network rm temp-network 2>/dev/null || true
+
 # Toon alle Docker netwerken
 echo "1. Lijst van alle Docker netwerken:"
 sudo docker network ls
 
-# Maak een demonstratie netwerk met subnet specificatie
+# Maak een demonstratie netwerk met EXPLICIET subnet specificatie
 echo "2. Nieuw netwerk maken met subnet specificatie:"
-sudo docker network create multi-host-network
+sudo docker network create --subnet=172.18.0.0/16 multi-host-network
 
 # Start container voor demonstratie
 echo "3. Start demo container:"
@@ -24,20 +30,12 @@ sudo docker network connect multi-host-network container1
 
 # Verbind container met specifiek IP (moet binnen subnet bereik zijn)
 echo "6. Verbind container met specifiek IP:"
-# First disconnect if already connected
-sudo docker network disconnect multi-host-network container2 2>/dev/null || true
-# Create a new network with proper subnet if needed
-sudo docker network rm multi-host-network 2>/dev/null || true
-sudo docker network create --subnet=172.18.0.0/16 multi-host-network
-# Now connect with specific IP
 sudo docker network connect --ip 172.18.0.10 multi-host-network container2
 
 # Maak netwerk aliassen
-# Eerst controleren of container al verbonden is en zo ja, ontkoppelen
 echo "7. Maak netwerk aliassen voor container:"
-if sudo docker network inspect multi-host-network | grep -q container2; then
-  sudo docker network disconnect multi-host-network container2
-fi
+# Eerst ontkoppelen om de aliassen toe te voegen
+sudo docker network disconnect multi-host-network container2
 sudo docker network connect --alias db --alias mysql multi-host-network container2
 
 # Bekijk netwerk details
@@ -63,7 +61,7 @@ echo "Netwerk ID: $NETWORK_ID"
 
 # Verwijder netwerk met ID - eerst alle containers ontkoppelen
 echo "13. Verwijder netwerk met ID (na ontkoppelen containers):"
-sudo docker network disconnect multi-host-network container2 2>/dev/null || true
+sudo docker network disconnect multi-host-network container2
 sudo docker network rm $NETWORK_ID
 
 # Verwijder ongebruikte netwerken
@@ -72,6 +70,6 @@ sudo docker network prune -f
 
 # Ruim demo containers op
 echo "15. Ruim containers op:"
-sudo docker rm -f container1 container2 2>/dev/null || true
+sudo docker rm -f container1 container2
 
 echo "Einde Docker Networking Commands"
